@@ -1,0 +1,59 @@
+# Justart: builds the image for Render (linux/amd64) on every push to main and
+# then asks Render to deploy it (repository secret RENDER_DEPLOY_HOOK_URL, the
+# deploy hook from the Render service settings). Kept apart from docker.yml so
+# that syncing the fork with upstream does not conflict.
+#   ghcr.io/deconotron/flowplan:render        the image Render runs (render/Dockerfile)
+#   ghcr.io/deconotron/flowplan:sha-<commit>  every build, for rollbacks
+name: Render image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: render-image
+  cancel-in-progress: true
+
+jobs:
+  image:
+    if: github.repository == 'deconotron/flowplan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/deconotron/flowplan:render
+            ghcr.io/deconotron/flowplan:sha-${{ github.sha }}
+          build-args: |
+            FLOWPLAN_SKIP_TYPECHECK=1
+            GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha,scope=render-amd64
+          cache-to: type=gha,scope=render-amd64,mode=max
+      - name: Deploy on Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL is not set: the image is built, deploy it on Render by hand."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Render deploy started."

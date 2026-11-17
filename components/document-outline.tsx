@@ -4,7 +4,8 @@
 // Open or closed is remembered in this browser for all documents. Shared and
 // published pages have it too (PublicOutline), from the rendered headings.
 // When the text column is too narrow for text and list side by side (a
-// narrow window, "KI fragen" docked beside the page, comments open, phones)
+// narrow window, "KI fragen" docked beside the page, comments open, text
+// comments beside the text, phones)
 // the list gives way: its button opens it as a popover that closes again
 // on a heading, Escape or a click elsewhere (useOutline).
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -13,6 +14,7 @@ import { ArrowsInLineVertical, ArrowsOutLineVertical, Link as LinkIcon, TreeView
 import { setAllFolded } from "@/lib/heading-folds-plugin";
 import { useT } from "./i18n";
 import { reveal } from "@/lib/motion";
+import { COMMENT_MARGIN_EVENT } from "@/lib/comment-margin";
 
 export type OutlineHeading = { text: string; pos: number; level: number };
 const KEY = "flowplan.outline";
@@ -51,11 +53,18 @@ export function useOutlineNarrow(anchor: HTMLElement | null) {
     if (!anchor) return;
     const column = anchor.closest(".main") ? anchor.closest<HTMLElement>(".page-content") : null;
     if (column && typeof ResizeObserver !== "undefined") {
-      const measure = () => setNarrow(!outlineFits(column.getBoundingClientRect().width));
+      // Text comments beside the text take the place on the right
+      // (components/inline-comments.tsx): the list gives way to them.
+      const measure = () =>
+        setNarrow(!outlineFits(column.getBoundingClientRect().width) || !!column.querySelector(".inline-comment-margin"));
       measure();
       const observer = new ResizeObserver(measure);
       observer.observe(column);
-      return () => observer.disconnect();
+      window.addEventListener(COMMENT_MARGIN_EVENT, measure);
+      return () => {
+        observer.disconnect();
+        window.removeEventListener(COMMENT_MARGIN_EVENT, measure);
+      };
     }
     const media = matchMedia(`(max-width: ${OUTLINE_WINDOW_MIN - 1}px)`);
     const update = () => setNarrow(media.matches);

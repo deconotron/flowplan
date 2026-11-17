@@ -36,7 +36,21 @@ export default defineConfig({
     // arbeiten?" (#295, components/offline-offer.tsx) over the page. The
     // specs start with it answered; onboarding-migration.spec.ts goes
     // through the question itself.
-    storageState: { cookies: [], origins: [{ origin: new URL(baseURL).origin, localStorage: [{ name: "flowplan-offline-offer", value: "never" }] }] },
+    // The specs of text comments use the panel below the text; on wide
+    // pages the threads stand beside the text instead, which
+    // inline-comments.spec.ts tests explicitly (lib/comment-margin.ts).
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: new URL(baseURL).origin,
+          localStorage: [
+            { name: "flowplan-offline-offer", value: "never" },
+            { name: "flowplan.commentMargin", value: "0" },
+          ],
+        },
+      ],
+    },
     headless: true,
     // The tests read German texts; English is tested explicitly. API
     // requests (request fixture, page.request) do not take the locale, so

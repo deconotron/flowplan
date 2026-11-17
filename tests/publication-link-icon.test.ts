@@ -81,5 +81,5 @@ test("the published page's root has the class only when the arrow is off", () =>
   assert.equal(publicPageClass({ wide: true, themed: true, externalLinkIcon: false }), `public-page public-wide public-themed ${HIDE_EXTERNAL_LINK_ICON_CLASS}`);
   // The stylesheet hides the arrow below a root with the class.
   const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
-  assert.match(css, /\.public-page\.hide-external-link-icon :is\(\.document-editor, \.shared-rich-editor, \.inline-comment-panel\) a\[href\^="http"\]::after/);
+  assert.match(css, /\.public-page\.hide-external-link-icon :is\(\.document-editor, \.shared-rich-editor, \.inline-comment-panel, \.inline-comment-margin\) a\[href\^="http"\]::after/);
 });

@@ -11531,7 +11531,7 @@ img.inline-comment-mark {
   font-style: italic;
   white-space: nowrap;
 }
-.inline-comment-panel blockquote {
+:is(.inline-comment-panel, .inline-comment-margin) blockquote {
   margin: 12px 0;
   padding: 8px 12px;
   border-left: 3px solid #dab234;
@@ -11540,7 +11540,7 @@ img.inline-comment-mark {
   max-height: 140px;
   overflow-y: auto;
 }
-.inline-comment-panel textarea {
+:is(.inline-comment-panel, .inline-comment-margin) textarea {
   width: 100%;
   min-height: 90px;
   resize: vertical;
@@ -11647,6 +11647,144 @@ img.inline-comment-mark {
 }
 .inline-comment-error {
   color: #b42335;
+}
+/* Text comments beside the text (components/inline-comments.tsx,
+   lib/comment-margin.ts): where the page has room, it widens by a column
+   right of the text (the text keeps its width), and each thread's card
+   stands there at the height of its passage. The column hangs on a host
+   without height at the end of the text and places its cards with
+   transforms; the open card moves a little towards the text. */
+.page-content {
+  --inline-margin-gap: 32px;
+  --inline-margin-width: 272px;
+}
+.page-content:has(.inline-comment-margin) {
+  padding-right: calc(var(--inline-margin-gap) + var(--inline-margin-width) + 24px);
+}
+.page-content:not(.full-width):has(.inline-comment-margin) {
+  max-width: calc(820px - 65px + var(--inline-margin-gap) + var(--inline-margin-width) + 24px);
+}
+.inline-comment-margin-host {
+  position: relative;
+  height: 0;
+}
+.inline-comment-margin {
+  position: absolute;
+  top: 0;
+  left: calc(100% + var(--inline-margin-gap));
+  z-index: 3;
+  width: var(--inline-margin-width);
+}
+.inline-margin-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: transform var(--motion-base) var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .inline-margin-slot {
+    transition: none;
+  }
+}
+.inline-margin-card {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+}
+button.inline-margin-card {
+  cursor: pointer;
+}
+button.inline-margin-card:hover {
+  border-color: #dab234;
+}
+.inline-margin-card.active {
+  padding: 12px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+.inline-margin-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.inline-margin-card-head strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inline-margin-card-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.inline-margin-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--secondary);
+}
+.inline-margin-card > .inline-comment-actions {
+  justify-content: flex-end;
+}
+.inline-margin-card .inline-comment-message {
+  padding: 10px 0;
+}
+.inline-margin-card > .inline-comment-actions + .inline-comment-message {
+  border-top: 0;
+  padding-top: 2px;
+}
+.inline-margin-card .inline-comment-new {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+.inline-margin-card form > .button,
+.inline-margin-card form > .inline-comment-actions {
+  margin-top: 8px;
+}
+/* Beside the text the comment boxes are compact: the formatting tools and
+   the counter show while writing. */
+.inline-comment-margin .comment-composer {
+  margin: 8px 0;
+}
+.inline-comment-margin .comment-input-label {
+  padding: 6px 10px 0;
+}
+.inline-comment-margin .comment-composer:not(:focus-within) :is(.comment-format-tools, .comment-input-hint) {
+  display: none;
+}
+.inline-comment-margin .comment-format-tools {
+  padding: 2px 4px;
+}
+.inline-comment-margin .comment-format-tools button {
+  width: 28px;
+  height: 28px;
+}
+.inline-comment-margin .comment-input {
+  min-height: 44px;
+  padding: 6px 10px 8px;
+  font-size: 13.5px;
+}
+.inline-comment-margin blockquote {
+  margin: 0 0 10px;
+  padding: 2px 10px;
+  max-height: 4.6em;
+  overflow: hidden;
+  color: var(--secondary);
+  font-size: 13px;
 }
 @media (max-width: 600px) {
   .inline-comment-panel {
@@ -13548,7 +13686,7 @@ html[data-view-transition="page"] .split-primary > .main-scroll {
 /* ---------- References vs. links ----------
    Links to the web are underlined with an outward arrow; references to
    Flowplan pages are chips with a page symbol; people keep their @ chip. */
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel)
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin)
   a[href^="http"] {
   color: var(--blue);
   text-decoration: underline;
@@ -13556,11 +13694,11 @@ html[data-view-transition="page"] .split-primary > .main-scroll {
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
 }
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel)
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin)
   a[href^="http"]:hover {
   text-decoration-color: var(--blue);
 }
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel)
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin)
   a[href^="http"]::after {
   content: "";
   display: inline-block;
@@ -13579,13 +13717,13 @@ html[data-view-transition="page"] .split-primary > .main-scroll {
    on its root and follows the publication's choice (lib/publication.ts). Screen only – print replaces the
    arrow with the address anyway (@media print below). */
 @media screen {
-  html.hide-external-link-icon :is(.document-editor, .shared-rich-editor, .inline-comment-panel) a[href^="http"]::after,
-  .public-page.hide-external-link-icon :is(.document-editor, .shared-rich-editor, .inline-comment-panel) a[href^="http"]::after {
+  html.hide-external-link-icon :is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin) a[href^="http"]::after,
+  .public-page.hide-external-link-icon :is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin) a[href^="http"]::after {
     content: none;
     display: none;
   }
 }
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel)
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin)
   :is(a[href*="#page="], a[href^="/share/"]) {
   display: inline;
   padding: 1px 6px 1px 5px;
@@ -13601,12 +13739,12 @@ html[data-view-transition="page"] .split-primary > .main-scroll {
     background-color 0.14s ease,
     border-color 0.14s ease;
 }
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel)
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin)
   :is(a[href*="#page="], a[href^="/share/"]):hover {
   background: var(--blue-light);
   border-color: color-mix(in srgb, var(--blue) 30%, transparent);
 }
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel)
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin)
   :is(a[href*="#page="], a[href^="/share/"])::before {
   content: "";
   display: inline-block;
@@ -13621,7 +13759,7 @@ html[data-view-transition="page"] .split-primary > .main-scroll {
     center / contain no-repeat;
 }
 /* A link to a block (#88): a paragraph mark in place of the page. */
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel) a[href*="#page="][href*="block="]::before {
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin) a[href*="#page="][href*="block="]::before {
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9 2.5v11M12 2.5v11M13.5 2.5H7a3 3 0 0 0 0 6h2' stroke='black' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
     center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9 2.5v11M12 2.5v11M13.5 2.5H7a3 3 0 0 0 0 6h2' stroke='black' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
@@ -13630,7 +13768,7 @@ html[data-view-transition="page"] .split-primary > .main-scroll {
 /* The linked page's or record's own icon (#96, components/page-link-icons.tsx)
    takes the place of the plain link symbol. A real element, not ::before
    content: emoji keep their colour font in Safari too. */
-:is(.document-editor, .shared-rich-editor, .inline-comment-panel)
+:is(.document-editor, .shared-rich-editor, .inline-comment-panel, .inline-comment-margin)
   :is(a[href*="#page="], a[href^="/share/"]):has(.page-link-icon)::before {
   content: none;
   display: none;
@@ -19112,6 +19250,7 @@ h3 .block-reactions {
   .code-block-note,
   .inline-comment-tools,
   .inline-comment-panel,
+  .inline-comment-margin-host,
   .add-cover,
   .page-top-actions,
   .since-visit,
@@ -19144,6 +19283,11 @@ h3 .block-reactions {
   .page-content {
     font-size: 11pt;
     line-height: 1.55;
+  }
+  /* Comments beside the text are not printed: no column for them. */
+  .page-content:has(.inline-comment-margin) {
+    max-width: 820px;
+    padding-right: 65px;
   }
   .page-title {
     font-size: 24pt;

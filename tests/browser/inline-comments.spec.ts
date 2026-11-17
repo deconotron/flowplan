@@ -103,6 +103,13 @@ async function fixture(page: Page, browser: Browser) {
   await context.addCookies([
     { name: "flowplan_session", value: token, url: origin },
   ]);
+  // The panel below the text, as for the first page (playwright.config.ts).
+  // (Not on about:blank, where the storage is closed.)
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem("flowplan.commentMargin", "0");
+    } catch {}
+  });
   const other = await context.newPage(),
     errors: string[] = [];
   for (const p of [page, other])
@@ -1062,6 +1069,69 @@ test("one text comment button and panel; comments stay with blocks moved up and 
     await expect(page.getByText("Textstelle nicht mehr verfügbar", { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Textkommentare schließen", exact: true }).click();
     await expect(page.locator(".inline-comment-panel")).toHaveCount(0);
+    expect(f.errors).toEqual([]);
+  } finally {
+    await f.context.close();
+    f.db.close();
+  }
+});
+
+test("on wide pages text comments stand beside the text, at their passage, as in Google Docs", async ({
+  page,
+  browser,
+}, info) => {
+  // Without the panel switch of the other specs (playwright.config.ts).
+  await page.addInitScript(() => {
+    try {
+      localStorage.removeItem("flowplan.commentMargin");
+    } catch {}
+  });
+  const f = await fixture(page, browser);
+  try {
+    await f.open(page);
+    if (info.project.name === "mobile") {
+      // Phones keep the panel below the text.
+      await select(page);
+      await newComment(page);
+      await expect(page.locator(".inline-comment-panel .inline-comment-new blockquote")).toHaveText("Bravo");
+      await expect(page.locator(".inline-comment-margin")).toHaveCount(0);
+      expect(f.errors).toEqual([]);
+      return;
+    }
+    // A new comment starts beside its passage, without the panel.
+    await select(page);
+    await page.keyboard.press("ControlOrMeta+Alt+m");
+    const margin = page.locator(".inline-comment-margin");
+    await expect(margin.locator(".inline-comment-new blockquote")).toHaveText("Bravo");
+    await expect(page.locator(".inline-comment-panel")).toHaveCount(0);
+    await margin.getByLabel("Kommentar zur Textstelle", { exact: true }).fill("Beside the text");
+    await margin.getByRole("button", { name: "Kommentar senden", exact: true }).click();
+    const open = margin.locator(".inline-margin-card.active");
+    await expect(open.locator(".inline-comment-message")).toContainText("Beside the text");
+    await expect(page.locator(".inline-comment-mark")).toHaveText("Bravo");
+    // The open card stands at the height of its passage, right of the text.
+    await expect
+      .poll(async () => {
+        const mark = await page.locator(".inline-comment-mark").boundingBox(),
+          card = await margin.locator(".inline-margin-slot.focused").boundingBox();
+        return !!mark && !!card && Math.abs(card.y - mark.y) < 2 && card.x > mark.x + mark.width;
+      })
+      .toBe(true);
+    // A click in the text closes it; the card stays, closed.
+    await page.locator(".tiptap p").first().click({ position: { x: 3, y: 5 } });
+    await expect(open).toHaveCount(0);
+    await expect(margin.locator("button.inline-margin-card")).toContainText("Beside the text");
+    // A click on the card opens it again: reply and resolve right there.
+    await margin.locator("button.inline-margin-card").click();
+    await open.getByLabel("Antwort", { exact: true }).fill("Reply beside");
+    await open.getByRole("button", { name: "Antwort senden", exact: true }).click();
+    await expect(open.locator(".inline-comment-message")).toHaveCount(2);
+    await open.getByRole("button", { name: "Thread erledigen", exact: true }).click();
+    // The open thread stays until it is closed; then the column goes.
+    await expect(open.getByText("Dieser Thread ist erledigt.", { exact: true })).toBeVisible();
+    await page.locator(".tiptap p").first().click({ position: { x: 3, y: 5 } });
+    await expect(margin).toHaveCount(0);
+    await expect(page.locator(".inline-comment-mark")).toHaveCount(0);
     expect(f.errors).toEqual([]);
   } finally {
     await f.context.close();

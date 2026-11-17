@@ -1,8 +1,9 @@
-# Justart: builds the image for Render (linux/amd64) on every push to main and
-# then asks Render to deploy it (repository secret RENDER_DEPLOY_HOOK_URL, the
-# deploy hook from the Render service settings). Kept apart from docker.yml so
-# that syncing the fork with upstream does not conflict.
-#   ghcr.io/deconotron/flowplan:render        the image Render runs (render/Dockerfile)
+# Justart: builds the image for studio.justart.vc (linux/amd64) on every push
+# to main. The server (DigitalOcean, Docker Compose) pulls the :render tag by
+# itself every 10 minutes, after a backup. Render is no longer used, so there
+# is no deploy step. Kept apart from docker.yml so that syncing the fork with
+# upstream does not conflict.
+#   ghcr.io/deconotron/flowplan:render        the image the server runs (render/Dockerfile)
 #   ghcr.io/deconotron/flowplan:sha-<commit>  every build, for rollbacks
 name: Render image
 
@@ -47,13 +48,3 @@ jobs:
             GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=render-amd64
           cache-to: type=gha,scope=render-amd64,mode=max
-      - name: Deploy on Render
-        env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::RENDER_DEPLOY_HOOK_URL is not set: the image is built, deploy it on Render by hand."
-            exit 0
-          fi
-          curl -fsS -X POST "$HOOK" > /dev/null
-          echo "Render deploy started."
